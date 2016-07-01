@@ -21,6 +21,7 @@
 @property (weak, nonatomic) IBOutlet UITextField *nameText;
 @property (weak, nonatomic) IBOutlet UITextField *messageText;
 @property (nonatomic, readwrite, assign) CFSocketRef socketRef;
+@property (weak, nonatomic) IBOutlet UIButton *connetServer;
 
 @end
 
@@ -30,12 +31,71 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
+   
+    [self.connetServer addTarget:self action:@selector(connectServer:) forControlEvents:UIControlEventTouchUpInside];
   
     
 }
 
-- (IBAction)connectServer:(id)sender
+#pragma mark - 方案一：使用
+//- (IBAction)connectServer:(id)sender
+//{
+//    if (!_socketRef) {
+//        
+//        //先创建一个socket
+//        _socketRef = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketNoCallBack,nil, nil);
+//        
+//        // ----创建sockadd_in的结构体，该结构体作为socket的地址，IPV6需要改参数
+//        struct sockaddr_in addr;
+//        //memset：将addr中所有字节用0替换并返回addr，作用是一段内存块中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法
+//        memset(&addr, 0, sizeof(addr));
+//        
+//        /* 设置addr的具体内容
+//         struct sockaddr_in {
+//         __uint8_t	sin_len; 长度
+//         sa_family_t	sin_family;  协议族，用AF_INET->互联网络，TCP，UDP等等
+//         in_port_t	sin_port;    端口号（使用网络字节顺序)htons：将主机的无符号短整形数转换成网络字节顺序
+//         struct	in_addr sin_addr; 存储IP地址 inet_addr()的功能是将一个点分十进制的IP转换成一个长整数型数（u_long类型），若字符串有效则将字符串转换为32位二进制网络字节序的IPV4地址，否则为INADDR_NONE
+//         char		sin_zero[8]; 让sockaddr与sockaddr_in两个数据结构保持大小相同而保留的空字节，无需处理
+//         };*/
+//        addr.sin_len = sizeof(addr);
+//        addr.sin_family = AF_INET;
+//        addr.sin_port = htons(TEST_IP_PROT);
+//        addr.sin_addr.s_addr = inet_addr(TEST_IP_ADDR);
+//        
+//        // ----将地址转化为CFDataRef
+//        CFDataRef dataRef = CFDataCreate(kCFAllocatorDefault,(UInt8 *)&addr, sizeof(addr));
+//        
+//        /*!
+//         *  @brief 连接socket
+//         *
+//         *  @param s       连接的socket
+//         *  @param address 连接的socket的包含的地址参数
+//         *  @param timeout 连接超时时间，如果为负，则不尝试连接，而是把连接放在后台进行，如果_socket消息类型为kCFSocketConnectCallBack，将会在连接成功或失败的时候在后台触发回调函数
+//         *
+//         *  @return        返回CFSocketError类型
+//         
+//         CFSocketError	CFSocketConnectToAddress(CFSocketRef s, CFDataRef address, CFTimeInterval timeout)
+//         */
+//        CFSocketError connectError = CFSocketConnectToAddress(_socketRef, dataRef, 5);
+//        
+//        if (connectError == kCFSocketSuccess) {
+//            
+//            [NSThread detachNewThreadSelector:@selector(readStreamData) toTarget:self withObject:nil];
+//            
+//        }else {
+//            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"对不起" message:@"连接失败，请稍后再试" delegate:self cancelButtonTitle:@"确定" otherButtonTitles:nil];
+//            [alert show];
+//        }
+//        
+//        
+//   
+//    }
+//}
+
+
+#pragma mark - 方案二：使用kCFSocketConnectCallBack
+- (void)connectServer:(id)sender
 {
     if (!_socketRef) {
         
@@ -62,8 +122,6 @@
         //memset：将addr中所有字节用0替换并返回addr，作用是一段内存块中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法
         memset(&addr, 0, sizeof(addr));
         
-
-        
         /* 设置addr的具体内容
          struct sockaddr_in {
          __uint8_t	sin_len; 长度
@@ -75,7 +133,6 @@
         addr.sin_len = sizeof(addr);
         addr.sin_family = AF_INET;
         addr.sin_port = htons(TEST_IP_PROT);
-//         addr.sin_addr.s_addr = htonl(INADDR_ANY);
         addr.sin_addr.s_addr = inet_addr(TEST_IP_ADDR);
         
         // ----将地址转化为CFDataRef
@@ -114,6 +171,7 @@
     }
 }
 
+#pragma mark - 读取数据
 - (void)readStreamData
 {
     // ----定义一个字符型变量
@@ -133,10 +191,13 @@
      （4）第四个参数一般置0。
      
      */
-    while(recv(CFSocketGetNative(_socketRef),buffer,sizeof(buffer),0)) {
+    
+    int readData;
+    //如果Socket错误，返回-1
+    while((readData = recv(CFSocketGetNative(_socketRef), buffer, sizeof(buffer), 0))) {
         
-        NSString *content = [[NSString alloc] initWithCString:(const char*)buffer
-                                                     encoding:NSUTF8StringEncoding];
+        NSString *content = [[NSString alloc] initWithBytes:buffer length:readData encoding:NSUTF8StringEncoding];
+                             
         dispatch_async(dispatch_get_main_queue(), ^{
             
              self.infoLabel.text = [NSString stringWithFormat:@"%@\n%@",content,self.infoLabel.text];
@@ -146,15 +207,23 @@
 
 }
 
+#pragma mark - 发送消息
 - (IBAction)sendMessage:(id)sender {
     
     NSString *stringTosend = [NSString stringWithFormat:@"%@说：%@",self.nameText.text,self.messageText.text];
     
     const char* data = [stringTosend UTF8String];
-    send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 1);
+    
+    int sendData = send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 1);
+    
+    if (sendData) {
+        self.infoLabel.text = @"发送成功";
+    }
+    
 }
 
 
+#pragma mark - 回调函数
 
 /*!
  *  @author 熊欣, 16-06-28 17:06:59
@@ -173,14 +242,16 @@
  */
 void ServerConnectCallBack ( CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef address, const void *data, void *info )
 {
+    ViewController *vc = (__bridge ViewController *)(info);
     // ----判断是不是NULL
     if (data != NULL) {
         printf("连接失败\n");
-    
+        
+        [vc performSelectorInBackground:@selector(releaseSocket) withObject:nil];
+        
     }else {
         printf("连接成功\n");
         
-        ViewController *vc = (__bridge ViewController *)(info);
         [vc performSelectorInBackground:@selector(readStreamData) withObject:nil];
   
     }
@@ -188,12 +259,22 @@ void ServerConnectCallBack ( CFSocketRef s, CFSocketCallBackType callbackType, C
   
 }
 
+#pragma mark - 关掉键盘
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    [super touchesBegan:touches withEvent:event];
-    
     [self.view endEditing:YES];
 }
+
+#pragma mark - 清空socket
+- (void)releaseSocket
+{
+    if (_socketRef) {
+        CFRelease(_socketRef);
+    }
+    
+    _socketRef = NULL;
+}
+
 
 @end
 
