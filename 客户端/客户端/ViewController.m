@@ -38,17 +38,17 @@
     
 }
 
-#pragma mark - 方案一：使用
+#pragma mark - 方案一：使用kCFSocketNoCallBack
 //- (IBAction)connectServer:(id)sender
 //{
 //    if (!_socketRef) {
-//        
-//        //先创建一个socket
+//
+//         // ----先创建一个socket
 //        _socketRef = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketNoCallBack,nil, nil);
 //        
 //        // ----创建sockadd_in的结构体，该结构体作为socket的地址，IPV6需要改参数
 //        struct sockaddr_in addr;
-//        //memset：将addr中所有字节用0替换并返回addr，作用是一段内存块中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法
+//        // ----memset：将addr中所有字节用0替换并返回addr，作用是一段内存块中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法
 //        memset(&addr, 0, sizeof(addr));
 //        
 //        /* 设置addr的具体内容
@@ -88,9 +88,7 @@
 //            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"对不起" message:@"连接失败，请稍后再试" delegate:self cancelButtonTitle:@"确定" otherButtonTitles:nil];
 //            [alert show];
 //        }
-//        
-//        
-//   
+//
 //    }
 //}
 
@@ -100,7 +98,7 @@
 {
     if (!_socketRef) {
         
-        //1.先创建Socket关联的上下文信息
+        // ----1.先创建Socket关联的上下文信息
         
         /*
         struct CFSocketContext
@@ -115,13 +113,13 @@
         */
         CFSocketContext sockContext = {0,(__bridge void *)(self),NULL,NULL,NULL};
         
-        //2.先创建一个socket
+        // ----2.先创建一个socket
         _socketRef = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketConnectCallBack,ServerConnectCallBack, &sockContext);
         
         // ----创建sockadd_in的结构体，该结构体作为socket的地址，IPV6需要改参数
-        struct sockaddr_in addr;
-        //memset：将addr中所有字节用0替换并返回addr，作用是一段内存块中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法
-        memset(&addr, 0, sizeof(addr));
+        struct sockaddr_in Socketaddr;
+        // ----memset：将addr中所有字节用0替换并返回addr，作用是一段内存块中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法
+        memset(&Socketaddr, 0, sizeof(Socketaddr));
         
         /* 设置addr的具体内容
          struct sockaddr_in {
@@ -131,13 +129,13 @@
          struct	in_addr sin_addr; 存储IP地址 inet_addr()的功能是将一个点分十进制的IP转换成一个长整数型数（u_long类型），若字符串有效则将字符串转换为32位二进制网络字节序的IPV4地址，否则为INADDR_NONE
          char		sin_zero[8]; 让sockaddr与sockaddr_in两个数据结构保持大小相同而保留的空字节，无需处理
          };*/
-        addr.sin_len = sizeof(addr);
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(TEST_IP_PROT);
-        addr.sin_addr.s_addr = inet_addr(TEST_IP_ADDR);
+        Socketaddr.sin_len = sizeof(Socketaddr);
+        Socketaddr.sin_family = AF_INET;
+        Socketaddr.sin_port = htons(TEST_IP_PROT);
+        Socketaddr.sin_addr.s_addr = inet_addr(TEST_IP_ADDR);
         
         // ----将地址转化为CFDataRef
-        CFDataRef dataRef = CFDataCreate(kCFAllocatorDefault,(UInt8 *)&addr, sizeof(addr));
+        CFDataRef dataRef = CFDataCreate(kCFAllocatorDefault,(UInt8 *)&Socketaddr, sizeof(Socketaddr));
     
         /*!
          *  @brief 连接socket
@@ -167,7 +165,7 @@
                            sourceRef, // 增加的运行循环源, 它会被retain一次
                            kCFRunLoopCommonModes //用什么模式把source加入到run loop里面,使用kCFRunLoopCommonModes可以监视所有通常模式添加source
                            );
-        
+        // ----之前被retain一次，所以这边要释放掉
         CFRelease(sourceRef);
     }
 }
@@ -193,7 +191,7 @@
      
      */
     
-    int readData;
+    long readData;
     //若无错误发生，recv()返回读入的字节数。如果连接已中止，返回0。如果发生错误，返回-1，应用程序可通过perror()获取相应错误信息
     while((readData = recv(CFSocketGetNative(_socketRef), buffer, sizeof(buffer), 0))) {
         
@@ -253,7 +251,7 @@ void ServerConnectCallBack ( CFSocketRef s, CFSocketCallBackType callbackType, C
     if (data != NULL) {
         printf("连接失败\n");
         
-        [vc performSelectorInBackground:@selector(releaseSocket) withObject:nil];
+        [vc performSelector:@selector(releaseSocket) withObject:nil];
         
     }else {
         printf("连接成功\n");
