@@ -212,12 +212,16 @@
 #pragma mark - 发送消息
 - (IBAction)sendMessage:(id)sender {
     
+    if (!_socketRef) {
+        [[[UIAlertView alloc] initWithTitle:@"对不起" message:@"请先连接服务器" delegate:self cancelButtonTitle:@"确定" otherButtonTitles: nil] show];
+        return;
+    }
     NSString *stringTosend = [NSString stringWithFormat:@"%@说：%@",self.nameText.text,self.messageText.text];
     
     const char* data = [stringTosend UTF8String];
     
     /** 成功则返回实际传送出去的字符数, 失败返回-1. 错误原因存于errno*/
-    int sendData = send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 0);
+    long sendData = send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 0);
     
     if (sendData < 0) {
         perror("send");
