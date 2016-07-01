@@ -9,6 +9,7 @@
 #import "ViewController.h"
 #import <sys/socket.h>
 #import <arpa/inet.h>
+#include<stdio.h>
 
 /** 这个端口可以随便设置*/
 #define TEST_IP_PROT 22231
@@ -193,7 +194,7 @@
      */
     
     int readData;
-    //如果Socket错误，返回-1
+    //若无错误发生，recv()返回读入的字节数。如果连接已中止，返回0。如果发生错误，返回-1，应用程序可通过perror()获取相应错误信息
     while((readData = recv(CFSocketGetNative(_socketRef), buffer, sizeof(buffer), 0))) {
         
         NSString *content = [[NSString alloc] initWithBytes:buffer length:readData encoding:NSUTF8StringEncoding];
@@ -204,6 +205,7 @@
 
         });
     }
+    perror("recv");
 
 }
 
@@ -214,12 +216,12 @@
     
     const char* data = [stringTosend UTF8String];
     
-    int sendData = send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 1);
+    /** 成功则返回实际传送出去的字符数, 失败返回-1. 错误原因存于errno*/
+    int sendData = send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 0);
     
-    if (sendData) {
-        self.infoLabel.text = @"发送成功";
+    if (sendData < 0) {
+        perror("send");
     }
-    
 }
 
 
@@ -273,6 +275,8 @@ void ServerConnectCallBack ( CFSocketRef s, CFSocketCallBackType callbackType, C
     }
     
     _socketRef = NULL;
+    
+    self.infoLabel.text = @"连接失败";
 }
 
 
