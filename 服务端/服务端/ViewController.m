@@ -25,24 +25,16 @@
 CFWriteStreamRef writeStreamRef;
 CFReadStreamRef  readStreamRef;
 
-- (void)viewDidLoad {
+- (void)viewDidLoad
+{
     [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
-    self.view.backgroundColor = [UIColor groupTableViewBackgroundColor];
     
     [self initSocket];
-    
-    
-  
-    
-    
-    
 }
 
--(void)initSocket {
-    
+-(void)initSocket
+{
     @autoreleasepool {
-        
         //创建Socket，指定TCPServerAcceptCallBack
         //作为kCFFSocketAcceptCallBack事件的监听函数
         CFSocketRef _socket = CFSocketCreate(kCFAllocatorDefault,
@@ -66,17 +58,17 @@ CFReadStreamRef  readStreamRef;
         //定义sockaddr_in类型的变量，该变量将作为CFSocket的地址
         struct sockaddr_in Socketaddr;
         memset(&Socketaddr, 0, sizeof(Socketaddr));
-        Socketaddr.sin_len = sizeof(Socketaddr);
-        Socketaddr.sin_family = AF_INET;
+        Socketaddr.sin_len         = sizeof(Socketaddr);
+        Socketaddr.sin_family      = AF_INET;
         //设置该服务器监听本机任意可用的IP地址
 //                addr4.sin_addr.s_addr = htonl(INADDR_ANY);
         //设置服务器监听地址
         Socketaddr.sin_addr.s_addr = inet_addr(TEST_IP_ADDR);
         //设置服务器监听端口
-        Socketaddr.sin_port = htons(TEST_IP_PROT);
-        
+        Socketaddr.sin_port        = htons(TEST_IP_PROT);
+
         //将IPv4的地址转换为CFDataRef
-        CFDataRef address = CFDataCreate(kCFAllocatorDefault, (UInt8 *)&Socketaddr, sizeof(Socketaddr));
+        CFDataRef address          = CFDataCreate(kCFAllocatorDefault, (UInt8 *)&Socketaddr, sizeof(Socketaddr));
         //将CFSocket绑定到指定IP地址
         if (CFSocketSetAddress(_socket, address) != kCFSocketSuccess) {
         
@@ -92,7 +84,7 @@ CFReadStreamRef  readStreamRef;
         
         NSLog(@"----启动循环监听客户端连接---");
         //获取当前线程的CFRunLoop
-        CFRunLoopRef cfRunLoop = CFRunLoopGetCurrent();
+        CFRunLoopRef cfRunLoop    = CFRunLoopGetCurrent();
         //将_socket包装成CFRunLoopSource
         CFRunLoopSourceRef source = CFSocketCreateRunLoopSource(kCFAllocatorDefault, _socket, 0);
         //为CFRunLoop对象添加source

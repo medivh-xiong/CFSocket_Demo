@@ -18,11 +18,11 @@
 
 @interface ViewController ()
 
-@property (weak, nonatomic) IBOutlet UILabel *infoLabel;
+@property (weak, nonatomic) IBOutlet UILabel     *infoLabel;
 @property (weak, nonatomic) IBOutlet UITextField *nameText;
 @property (weak, nonatomic) IBOutlet UITextField *messageText;
+@property (weak, nonatomic) IBOutlet UIButton    *connetServer;
 @property (nonatomic, readwrite, assign) CFSocketRef socketRef;
-@property (weak, nonatomic) IBOutlet UIButton *connetServer;
 
 @end
 
@@ -129,13 +129,13 @@
          struct	in_addr sin_addr; 存储IP地址 inet_addr()的功能是将一个点分十进制的IP转换成一个长整数型数（u_long类型），若字符串有效则将字符串转换为32位二进制网络字节序的IPV4地址，否则为INADDR_NONE
          char		sin_zero[8]; 让sockaddr与sockaddr_in两个数据结构保持大小相同而保留的空字节，无需处理
          };*/
-        Socketaddr.sin_len = sizeof(Socketaddr);
-        Socketaddr.sin_family = AF_INET;
-        Socketaddr.sin_port = htons(TEST_IP_PROT);
+        Socketaddr.sin_len         = sizeof(Socketaddr);
+        Socketaddr.sin_family      = AF_INET;
+        Socketaddr.sin_port        = htons(TEST_IP_PROT);
         Socketaddr.sin_addr.s_addr = inet_addr(TEST_IP_ADDR);
-        
+
         // ----将地址转化为CFDataRef
-        CFDataRef dataRef = CFDataCreate(kCFAllocatorDefault,(UInt8 *)&Socketaddr, sizeof(Socketaddr));
+        CFDataRef dataRef          = CFDataCreate(kCFAllocatorDefault,(UInt8 *)&Socketaddr, sizeof(Socketaddr));
     
         /*!
          *  @brief 连接socket
@@ -155,8 +155,8 @@
         // ----加入循环中
         
         // ----获取当前线程的RunLoop
-        CFRunLoopRef runLoopRef = CFRunLoopGetCurrent();
-        
+        CFRunLoopRef runLoopRef      = CFRunLoopGetCurrent();
+
         // ----把Socket包装成CFRunLoopSource，最后一个参数是指有多个runloopsource通过同一个runloop时候顺序，如果只有一个source通常为0
         CFRunLoopSourceRef sourceRef = CFSocketCreateRunLoopSource(kCFAllocatorDefault, _socketRef, 0);
         
@@ -215,11 +215,11 @@
         return;
     }
     NSString *stringTosend = [NSString stringWithFormat:@"%@说：%@",self.nameText.text,self.messageText.text];
-    
-    const char* data = [stringTosend UTF8String];
-    
+
+    const char* data       = [stringTosend UTF8String];
+
     /** 成功则返回实际传送出去的字符数, 失败返回-1. 错误原因存于errno*/
-    long sendData = send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 0);
+    long sendData          = send(CFSocketGetNative(_socketRef), data, strlen(data) + 1, 0);
     
     if (sendData < 0) {
         perror("send");
