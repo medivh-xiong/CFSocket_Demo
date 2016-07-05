@@ -12,9 +12,9 @@
 #include<stdio.h>
 
 /** 这个端口可以随便设置*/
-#define TEST_IP_PROT 22231
+#define TEST_IP_PROT 22235
 /** 替换成你需要连接服务器绑定的IP地址，不能随便输*/
-#define TEST_IP_ADDR "192.168.1.143"
+#define TEST_IP_ADDR "192.168.1.115"
 
 @interface ViewController ()
 
